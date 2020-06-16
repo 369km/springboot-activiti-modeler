@@ -59,14 +59,66 @@ spring:
 复制diagram-viewer、editor-app、modeler.html三个文件到springboot项目中的resources目录下的static目录下。
 2. 解压activiti-5.22.0.zip，在Activiti-5.22.0的libs中找到activiti-modeler-5.22.0-sources.jar，
 将其解压，将会找到以下三个类：ModelEditorJsonRestResource,ModelSaveRestResource,StencilsetRestResource。
-添加注解：@RestController,@RequestMapping("/service")
-3. 修改 resources目录下的static/editor-app/app-cfg.js,
+复制到自己项目，添加注解：@RestController,@RequestMapping("/service")
+3.修改ModelSaveRestResource
+```java
+@RestController
+@RequestMapping("/service")
+public class ModelSaveRestResource implements ModelDataJsonConstants {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(ModelSaveRestResource.class);
+    @Autowired
+    private RepositoryService repositoryService;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @PutMapping("/model/{modelId}/save")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void saveModel(@PathVariable String modelId,
+                          @RequestParam("name") String name,
+                          @RequestParam("json_xml") String json_xml,
+                          @RequestParam("svg_xml") String svg_xml,
+                          @RequestParam("description") String description) {
+        try {
+            Model model = repositoryService.getModel(modelId);
+            ObjectNode modelJson = (ObjectNode) objectMapper.readTree(model.getMetaInfo());
+
+            modelJson.put(MODEL_NAME, name);
+            modelJson.put(MODEL_DESCRIPTION, description);
+            model.setMetaInfo(modelJson.toString());
+            model.setName(name);
+
+            repositoryService.saveModel(model);
+            repositoryService.addModelEditorSource(model.getId(), json_xml.getBytes("utf-8"));
+
+            InputStream svgStream = new ByteArrayInputStream(svg_xml.getBytes("utf-8"));
+            TranscoderInput input = new TranscoderInput(svgStream);
+
+            PNGTranscoder transcoder = new PNGTranscoder();
+            // Setup output
+            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+            TranscoderOutput output = new TranscoderOutput(outStream);
+
+            // Do the transformation
+            transcoder.transcode(input, output);
+            final byte[] result = outStream.toByteArray();
+            repositoryService.addModelEditorSourceExtra(model.getId(), result);
+            outStream.close();
+
+        } catch (Exception e) {
+            LOGGER.error("Error saving model", e);
+            throw new ActivitiException("Error saving model", e);
+        }
+    }
+}
+```
+4. 修改 resources目录下的static/editor-app/app-cfg.js,
 ```js
 ACTIVITI.CONFIG = {
     'contextRoot' : '/service',
 };
 ```
-4. 将源码路径modules\activiti-webapp-explorer2\src\main\resources\stencilset.json复制到springboot项目中的resources目录下
+5. 将源码路径modules\activiti-webapp-explorer2\src\main\resources\stencilset.json复制到springboot项目中的resources目录下,
+汉化就是将json中对应名称替换成中文
 
 ## 配置静态资源
 ```java
