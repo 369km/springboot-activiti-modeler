@@ -1,5 +1,5 @@
 # 简单使用
-项目拉下拉只需要配置数据库，然后访问http:localhost/process,即可
+项目拉下拉只需要配置数据库，然后访问http:localhost/models,即可
 
 # 从零开始
 ## 依赖
@@ -111,7 +111,7 @@ public class ModelSaveRestResource implements ModelDataJsonConstants {
 4. 修改 resources目录下的static/editor-app/app-cfg.js,
 ```js
 ACTIVITI.CONFIG = {
-    'contextRoot' : '/process',
+    'contextRoot' : '/models',
 };
 ```
 5. 将源码路径modules\activiti-webapp-explorer2\src\main\resources\stencilset.json复制到springboot项目中的resources目录下,
@@ -201,7 +201,7 @@ public class ActivitiConfig {
 1. 源码
 ```java
 @RestController
-@RequestMapping("/process")
+@RequestMapping("/models")
 public class ModelerController {
     @Autowired
     private ModelEditorJsonRestResource modelEditorJsonRestResource;

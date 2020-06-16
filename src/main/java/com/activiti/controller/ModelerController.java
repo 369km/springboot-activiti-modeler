@@ -14,7 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/process")
+@RequestMapping("/models")
 public class ModelerController {
     @Autowired
     private ModelEditorJsonRestResource modelEditorJsonRestResource;
@@ -48,6 +48,11 @@ public class ModelerController {
     @GetMapping
     public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
         modelerService.modeler(request, response);
+    }
+
+    @GetMapping("/modelList")
+    public void modelList(){
+
     }
 
 }
