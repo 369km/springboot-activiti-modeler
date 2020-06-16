@@ -1,3 +1,7 @@
+# 简单使用
+项目拉下拉只需要配置数据库，然后访问http:localhost/process,即可
+
+# 从零开始
 ## 依赖
 ```maven
     <parent>
