@@ -59,11 +59,10 @@ spring:
 复制diagram-viewer、editor-app、modeler.html三个文件到springboot项目中的resources目录下的static目录下。
 2. 解压activiti-5.22.0.zip，在Activiti-5.22.0的libs中找到activiti-modeler-5.22.0-sources.jar，
 将其解压，将会找到以下三个类：ModelEditorJsonRestResource,ModelSaveRestResource,StencilsetRestResource。
-复制到自己项目，添加注解：@RestController,@RequestMapping("/service")
+复制resource包下，改造成符合springboot的service
 3.修改ModelSaveRestResource
 ```java
-@RestController
-@RequestMapping("/service")
+@Service
 public class ModelSaveRestResource implements ModelDataJsonConstants {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ModelSaveRestResource.class);
     @Autowired
@@ -71,13 +70,7 @@ public class ModelSaveRestResource implements ModelDataJsonConstants {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @PutMapping("/model/{modelId}/save")
-    @ResponseStatus(value = HttpStatus.OK)
-    public void saveModel(@PathVariable String modelId,
-                          @RequestParam("name") String name,
-                          @RequestParam("json_xml") String json_xml,
-                          @RequestParam("svg_xml") String svg_xml,
-                          @RequestParam("description") String description) {
+    public void saveModel(String modelId, String name, String json_xml, String svg_xml, String description) {
         try {
             Model model = repositoryService.getModel(modelId);
             ObjectNode modelJson = (ObjectNode) objectMapper.readTree(model.getMetaInfo());
@@ -114,7 +107,7 @@ public class ModelSaveRestResource implements ModelDataJsonConstants {
 4. 修改 resources目录下的static/editor-app/app-cfg.js,
 ```js
 ACTIVITI.CONFIG = {
-    'contextRoot' : '/service',
+    'contextRoot' : '/process',
 };
 ```
 5. 将源码路径modules\activiti-webapp-explorer2\src\main\resources\stencilset.json复制到springboot项目中的resources目录下,
@@ -207,40 +200,43 @@ public class ActivitiConfig {
 @RequestMapping("/process")
 public class ModelerController {
     @Autowired
-    private RepositoryService repositoryService;
+    private ModelEditorJsonRestResource modelEditorJsonRestResource;
+    @Autowired
+    private ModelSaveRestResource modelSaveRestResource;
+    @Autowired
+    private StencilsetRestResource stencilsetRestResource;
+    @Autowired
+    private ModelerService modelerService;
+
+    @GetMapping("/model/{modelId}/json")
+    public ObjectNode getEditorJson(@PathVariable String modelId) {
+        return modelEditorJsonRestResource.getEditorJson(modelId);
+    }
+
+    @PutMapping("/model/{modelId}/save")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void saveModel(@PathVariable String modelId,
+                          @RequestParam("name") String name,
+                          @RequestParam("json_xml") String json_xml,
+                          @RequestParam("svg_xml") String svg_xml,
+                          @RequestParam("description") String description) {
+        modelSaveRestResource.saveModel(modelId, name, json_xml, svg_xml, description);
+    }
+
+    @GetMapping("/editor/stencilset")
+    public String getStencilset() {
+        return stencilsetRestResource.getStencilset();
+    }
 
     @GetMapping
     public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode editorNode = objectMapper.createObjectNode();
-        editorNode.put("id", "canvas");
-        editorNode.put("resourceId", "canvas");
-        ObjectNode stencilSetNode = objectMapper.createObjectNode();
-        stencilSetNode.put("namespace", "http://b3mn.org/stencilset/bpmn2.0#");
-        editorNode.set("stencilset", stencilSetNode);
-
-        long dateTime = LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli();
-        String name = "P" + dateTime;
-        ObjectNode modelObjectNode = objectMapper.createObjectNode();
-        modelObjectNode.put(ModelDataJsonConstants.MODEL_NAME, name);
-        modelObjectNode.put(ModelDataJsonConstants.MODEL_REVISION, 1);
-        modelObjectNode.put(ModelDataJsonConstants.MODEL_DESCRIPTION, "");
-
-        Model modelData = repositoryService.newModel();
-        modelData.setMetaInfo(modelObjectNode.toString());
-        modelData.setName(name);
-        modelData.setKey(String.valueOf(dateTime));
-        repositoryService.saveModel(modelData);
-
-        repositoryService.addModelEditorSource(modelData.getId(), editorNode.toString().getBytes("utf-8"));
-        response.sendRedirect(request.getContextPath() + "/modeler.html?modelId=" + modelData.getId());
+        modelerService.modeler(request, response);
     }
 }
 ```
-2. 启动类配置(配置了两个包扫描和排除了activiti自带的安全认证)
+2. 启动类配置(排除了activiti自带的安全认证)
 ```java
 @SpringBootApplication(
-        scanBasePackages = {"com.activity", "com.foo"},
         exclude = {org.activiti.spring.boot.SecurityAutoConfiguration.class, SecurityAutoConfiguration.class})
 public class Application {
     public static void main(String[] args) {
