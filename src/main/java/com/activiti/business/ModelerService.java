@@ -1,4 +1,4 @@
-package com.activity.business;
+package com.activiti.business;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

@@ -1,4 +1,4 @@
-package com.activity.resource;
+package com.activiti.resource;
 
 import org.activiti.engine.ActivitiException;
 import org.apache.commons.io.IOUtils;

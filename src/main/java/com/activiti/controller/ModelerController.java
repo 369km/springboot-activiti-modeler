@@ -1,9 +1,9 @@
-package com.activity.controller;
+package com.activiti.controller;
 
-import com.activity.business.ModelerService;
-import com.activity.resource.ModelEditorJsonRestResource;
-import com.activity.resource.ModelSaveRestResource;
-import com.activity.resource.StencilsetRestResource;
+import com.activiti.business.ModelerService;
+import com.activiti.resource.ModelEditorJsonRestResource;
+import com.activiti.resource.ModelSaveRestResource;
+import com.activiti.resource.StencilsetRestResource;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

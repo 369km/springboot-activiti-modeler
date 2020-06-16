@@ -1,4 +1,4 @@
-package com.activity.config;
+package com.activiti.config;
 
 import org.activiti.engine.*;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
