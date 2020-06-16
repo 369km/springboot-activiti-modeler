@@ -61,13 +61,12 @@ spring:
 将其解压，将会找到以下三个类：ModelEditorJsonRestResource,ModelSaveRestResource,StencilsetRestResource。
 添加注解：@RestController,@RequestMapping("/service")
 3. 修改 resources目录下的static/editor-app/app-cfg.js,
-4. 将源码路径modules\activiti-webapp-explorer2\src\main\resources\stencilset.json复制到springboot项目中的resources目录下
-
 ```js
 ACTIVITI.CONFIG = {
     'contextRoot' : '/service',
 };
 ```
+4. 将源码路径modules\activiti-webapp-explorer2\src\main\resources\stencilset.json复制到springboot项目中的resources目录下
 
 ## 配置静态资源
 ```java
