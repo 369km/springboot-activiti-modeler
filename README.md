@@ -54,7 +54,7 @@ spring:
     check-process-definitions: false
 ```
 
-## 修改activiti官方提供的源码
+## 修改activiti官方提供的源码(进入官网https://www.activiti.org/before-you-start，下载源码)
 1. 进入源码文件中的modules\activiti-webapp-explorer2\src\main\webapp目录，
 复制diagram-viewer、editor-app、modeler.html三个文件到springboot项目中的resources目录下的static目录下。
 2. 解压activiti-5.22.0.zip，在Activiti-5.22.0的libs中找到activiti-modeler-5.22.0-sources.jar，
