@@ -212,11 +212,13 @@ public class ModelerController {
     @Autowired
     private ModelerService modelerService;
 
+    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
     @GetMapping("/model/{modelId}/json")
     public ObjectNode getEditorJson(@PathVariable String modelId) {
         return modelEditorJsonRestResource.getEditorJson(modelId);
     }
 
+    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
     @PutMapping("/model/{modelId}/save")
     @ResponseStatus(value = HttpStatus.OK)
     public void saveModel(@PathVariable String modelId,
@@ -227,22 +229,48 @@ public class ModelerController {
         modelSaveRestResource.saveModel(modelId, name, json_xml, svg_xml, description);
     }
 
+    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
     @GetMapping("/editor/stencilset")
     public String getStencilset() {
         return stencilsetRestResource.getStencilset();
     }
 
-    //定义模型
-    @GetMapping
+    @ApiOperation("定义模型")
+    @PostMapping
     public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
         modelerService.modeler(request, response);
     }
-    
-    //发布模型
+
+    @ApiOperation("发布模型")
     @PostMapping("/{modelId}/deployment")
-    public void deployment(@PathVariable String modelId) throws IOException {
-        modelerService.deployment(modelId);
+    public String deployment(@PathVariable String modelId) throws IOException {
+        return modelerService.deployment(modelId);
     }
+
+    @ApiOperation("启动流程")
+    @PostMapping("/start")
+    public String start(@RequestParam String processName) {
+        return modelerService.start(processName);
+    }
+
+    @ApiOperation("待审批任务")
+    @GetMapping("/pending/approval")
+    public List<String> pendingApproval(@RequestParam String assignee) {
+        return modelerService.pendingApproval(assignee);
+    }
+
+    @ApiOperation("审批")
+    @PostMapping("/{processInstanceId}/approval")
+    public void Approval(@PathVariable String processInstanceId) {
+        modelerService.approval(processInstanceId);
+    }
+
+    @ApiOperation("流程历史节点")
+    @GetMapping("/{processInstanceId}/history")
+    public List<Map<String, Object>> historyNode(@PathVariable String processInstanceId) {
+        return modelerService.historyNode(processInstanceId);
+    }
+
 }
 ```
 2. 业务实现
@@ -251,9 +279,15 @@ public class ModelerController {
 public class ModelerServiceImpl implements ModelerService {
     @Autowired
     private RepositoryService repositoryService;
+    @Autowired
+    private RuntimeService runtimeService;
+    @Autowired
+    private TaskService taskService;
+    @Autowired
+    private HistoryService historyService;
 
     @Override
-    public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public String modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode editorNode = objectMapper.createObjectNode();
         editorNode.put("id", "canvas");
@@ -277,10 +311,11 @@ public class ModelerServiceImpl implements ModelerService {
 
         repositoryService.addModelEditorSource(modelData.getId(), editorNode.toString().getBytes("utf-8"));
         response.sendRedirect(request.getContextPath() + "/modeler.html?modelId=" + modelData.getId());
+        return modelData.getId();
     }
 
     @Override
-    public void deployment(String modelId) throws IOException {
+    public String deployment(String modelId) throws IOException {
         Model modelData = repositoryService.getModel(modelId);
         byte[] modelEditorSource = repositoryService.getModelEditorSource(modelData.getId());
         Assert.notNull(modelEditorSource, "模型中未定义流程");
@@ -298,6 +333,48 @@ public class ModelerServiceImpl implements ModelerService {
                 .deploy();
         modelData.setDeploymentId(deployment.getId());
         repositoryService.saveModel(modelData);
+        return model.getProcesses().get(0).getId();
+    }
+
+    @Override
+    public String start(String processName) {
+        return runtimeService.startProcessInstanceByKey(processName).getId();
+    }
+
+    @Override
+    public void approval(String processInstanceId) {
+        String taskId = taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult().getId();
+        taskService.complete(taskId);
+    }
+
+    @Override
+    public List<String> pendingApproval(String assignee) {
+        return taskService.createTaskQuery()
+                .taskAssignee(assignee)
+                .list()
+                .stream()
+                .map(TaskInfo::getId)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Map<String, Object>> historyNode(String processInstanceId) {
+        return historyService.createHistoricTaskInstanceQuery()
+                .processInstanceId(processInstanceId)
+                .taskDeleteReason("completed")
+                .orderByHistoricTaskInstanceEndTime()
+                .desc()
+                .list()
+                .stream()
+                .map(task -> {
+                    Map<String, Object> history = new HashMap<>();
+                    history.put("endTime", task.getEndTime());
+                    history.put("assignee", task.getAssignee());
+                    history.put("name", task.getName());
+                    return history;
+                })
+                .collect(Collectors.toList());
+
     }
 }
 ```
@@ -311,4 +388,4 @@ public class Application {
     }
 }
 ```
-4. 访问地址：http:localhost:80/process
+4. 访问地址：http:localhost:80/models
