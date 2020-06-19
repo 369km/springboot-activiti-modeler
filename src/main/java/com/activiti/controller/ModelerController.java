@@ -30,11 +30,13 @@ public class ModelerController {
     @Autowired
     private ModelerService modelerService;
 
+    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
     @GetMapping("/model/{modelId}/json")
     public ObjectNode getEditorJson(@PathVariable String modelId) {
         return modelEditorJsonRestResource.getEditorJson(modelId);
     }
 
+    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
     @PutMapping("/model/{modelId}/save")
     @ResponseStatus(value = HttpStatus.OK)
     public void saveModel(@PathVariable String modelId,
@@ -45,33 +47,34 @@ public class ModelerController {
         modelSaveRestResource.saveModel(modelId, name, json_xml, svg_xml, description);
     }
 
+    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
     @GetMapping("/editor/stencilset")
     public String getStencilset() {
         return stencilsetRestResource.getStencilset();
     }
 
     @ApiOperation("定义模型")
-    @GetMapping
-    public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        modelerService.modeler(request, response);
+    @PostMapping
+    public String modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        return modelerService.modeler(request, response);
     }
 
     @ApiOperation("发布模型")
     @PostMapping("/{modelId}/deployment")
-    public void deployment(@PathVariable String modelId) throws IOException {
-        modelerService.deployment(modelId);
+    public String deployment(@PathVariable String modelId) throws IOException {
+        return modelerService.deployment(modelId);
     }
 
     @ApiOperation("启动流程")
-    @PostMapping("/{modelId}/start")
-    public void start(@PathVariable String modelId) throws IOException {
-        modelerService.deployment(modelId);
+    @PostMapping("/start")
+    public String start(@RequestParam String processName) {
+        return modelerService.start(processName);
     }
 
     @ApiOperation("审批")
-    @PostMapping("/{modelId}/Approval")
-    public void Approval(@PathVariable String modelId) throws IOException {
-        modelerService.deployment(modelId);
+    @PostMapping("/{processInstanceId}/approval")
+    public void Approval(@PathVariable String processInstanceId) {
+        modelerService.approval(processInstanceId);
     }
 
 }

@@ -8,6 +8,8 @@ import org.activiti.bpmn.model.BpmnModel;
 import org.activiti.editor.constants.ModelDataJsonConstants;
 import org.activiti.editor.language.json.converter.BpmnJsonConverter;
 import org.activiti.engine.RepositoryService;
+import org.activiti.engine.RuntimeService;
+import org.activiti.engine.TaskService;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.repository.Model;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +26,14 @@ import java.time.ZoneOffset;
 public class ModelerServiceImpl implements ModelerService {
     @Autowired
     private RepositoryService repositoryService;
+    @Autowired
+    private RuntimeService runtimeService;
+    @Autowired
+    private TaskService taskService;
+
 
     @Override
-    public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public String modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode editorNode = objectMapper.createObjectNode();
         editorNode.put("id", "canvas");
@@ -50,10 +57,11 @@ public class ModelerServiceImpl implements ModelerService {
 
         repositoryService.addModelEditorSource(modelData.getId(), editorNode.toString().getBytes("utf-8"));
         response.sendRedirect(request.getContextPath() + "/modeler.html?modelId=" + modelData.getId());
+        return modelData.getId();
     }
 
     @Override
-    public void deployment(String modelId) throws IOException {
+    public String deployment(String modelId) throws IOException {
         Model modelData = repositoryService.getModel(modelId);
         byte[] modelEditorSource = repositoryService.getModelEditorSource(modelData.getId());
         Assert.notNull(modelEditorSource, "模型中未定义流程");
@@ -71,5 +79,17 @@ public class ModelerServiceImpl implements ModelerService {
                 .deploy();
         modelData.setDeploymentId(deployment.getId());
         repositoryService.saveModel(modelData);
+        return model.getProcesses().get(0).getId();
+    }
+
+    @Override
+    public String start(String processName) {
+        return runtimeService.startProcessInstanceByKey(processName).getId();
+    }
+
+    @Override
+    public void approval(String processInstanceId) {
+        String taskId = taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult().getId();
+        taskService.complete(taskId);
     }
 }

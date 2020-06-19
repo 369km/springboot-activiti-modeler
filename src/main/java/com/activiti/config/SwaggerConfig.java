@@ -30,8 +30,8 @@ public class SwaggerConfig {
     UiConfiguration uiConfig() {
         return UiConfigurationBuilder.builder().deepLinking(true).displayOperationId(false).defaultModelsExpandDepth(1)
                 .defaultModelExpandDepth(1).defaultModelRendering(ModelRendering.MODEL).displayRequestDuration(false)
-                .docExpansion(DocExpansion.NONE).filter(false).maxDisplayedTags((Integer)null).operationsSorter(OperationsSorter.ALPHA)
-                .showExtensions(false).tagsSorter(TagsSorter.ALPHA).supportedSubmitMethods(UiConfiguration.Constants.DEFAULT_SUBMIT_METHODS).validatorUrl((String)null).build();
+                .docExpansion(DocExpansion.NONE).filter(false).maxDisplayedTags(null).operationsSorter(OperationsSorter.ALPHA)
+                .showExtensions(false).tagsSorter(TagsSorter.ALPHA).supportedSubmitMethods(UiConfiguration.Constants.DEFAULT_SUBMIT_METHODS).validatorUrl(null).build();
     }
 
     @Bean
