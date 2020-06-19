@@ -3,6 +3,8 @@ package com.activiti.business;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 public interface ModelerService {
     /**
@@ -26,4 +28,17 @@ public interface ModelerService {
      * @param processInstanceId 流程实例id
      */
     void approval(String processInstanceId);
+
+    /**
+     * @param assignee 审批人
+     * @return 待审批任务(taskId)列表
+     */
+    List<String> pendingApproval(String assignee);
+
+    /**
+     *
+     * @param processInstanceId 流程实例id
+     * @return 历史任务
+     */
+    List<Map<String, Object>> historyNode(String processInstanceId);
 }
