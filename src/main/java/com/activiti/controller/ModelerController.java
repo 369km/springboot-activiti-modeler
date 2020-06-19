@@ -50,9 +50,10 @@ public class ModelerController {
         modelerService.modeler(request, response);
     }
 
-    @GetMapping("/modelList")
-    public void modelList(){
 
+    @PostMapping("/{modelId}/deployment")
+    public void deployment(@PathVariable String modelId) throws IOException {
+        modelerService.deployment(modelId);
     }
 
 }

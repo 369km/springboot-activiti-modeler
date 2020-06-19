@@ -6,4 +6,6 @@ import java.io.IOException;
 
 public interface ModelerService {
     void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException;
+
+    void deployment(String modelId) throws IOException;
 }

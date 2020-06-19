@@ -232,13 +232,76 @@ public class ModelerController {
         return stencilsetRestResource.getStencilset();
     }
 
+    //定义模型
     @GetMapping
     public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
         modelerService.modeler(request, response);
     }
+    
+    //发布模型
+    @PostMapping("/{modelId}/deployment")
+    public void deployment(@PathVariable String modelId) throws IOException {
+        modelerService.deployment(modelId);
+    }
 }
 ```
-2. 启动类配置(排除了activiti自带的安全认证)
+2. 业务实现
+```java
+@Service
+public class ModelerServiceImpl implements ModelerService {
+    @Autowired
+    private RepositoryService repositoryService;
+
+    @Override
+    public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode editorNode = objectMapper.createObjectNode();
+        editorNode.put("id", "canvas");
+        editorNode.put("resourceId", "canvas");
+        ObjectNode stencilSetNode = objectMapper.createObjectNode();
+        stencilSetNode.put("namespace", "http://b3mn.org/stencilset/bpmn2.0#");
+        editorNode.set("stencilset", stencilSetNode);
+
+        long dateTime = LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli();
+        String name = "P" + dateTime;
+        ObjectNode modelObjectNode = objectMapper.createObjectNode();
+        modelObjectNode.put(ModelDataJsonConstants.MODEL_NAME, name);
+        modelObjectNode.put(ModelDataJsonConstants.MODEL_REVISION, 1);
+        modelObjectNode.put(ModelDataJsonConstants.MODEL_DESCRIPTION, "");
+
+        Model modelData = repositoryService.newModel();
+        modelData.setMetaInfo(modelObjectNode.toString());
+        modelData.setName(name);
+        modelData.setKey(String.valueOf(dateTime));
+        repositoryService.saveModel(modelData);
+
+        repositoryService.addModelEditorSource(modelData.getId(), editorNode.toString().getBytes("utf-8"));
+        response.sendRedirect(request.getContextPath() + "/modeler.html?modelId=" + modelData.getId());
+    }
+
+    @Override
+    public void deployment(String modelId) throws IOException {
+        Model modelData = repositoryService.getModel(modelId);
+        byte[] modelEditorSource = repositoryService.getModelEditorSource(modelData.getId());
+        Assert.notNull(modelEditorSource, "模型中未定义流程");
+
+        JsonNode modelNode = new ObjectMapper().readTree(modelEditorSource);
+        BpmnModel model = new BpmnJsonConverter().convertToBpmnModel(modelNode);
+        Assert.notEmpty(model.getProcesses(), "模型中未定义流程");
+        byte[] modelXml = new BpmnXMLConverter().convertToXML(model);
+
+        //发布
+        String processName = modelData.getName() + ".bpmn20.xml";
+        Deployment deployment = repositoryService.createDeployment()
+                .name(modelData.getName())
+                .addString(processName, new String(modelXml, "UTF-8"))
+                .deploy();
+        modelData.setDeploymentId(deployment.getId());
+        repositoryService.saveModel(modelData);
+    }
+}
+```
+3. 启动类配置(排除了activiti自带的安全认证)
 ```java
 @SpringBootApplication(
         exclude = {org.activiti.spring.boot.SecurityAutoConfiguration.class, SecurityAutoConfiguration.class})
@@ -248,4 +311,4 @@ public class Application {
     }
 }
 ```
-3. 访问地址：http:localhost:80/process
+4. 访问地址：http:localhost:80/process
