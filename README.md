@@ -63,10 +63,11 @@ spring:
 复制diagram-viewer、editor-app、modeler.html三个文件到springboot项目中的resources目录下的static目录下。
 2. 解压activiti-5.22.0.zip，在Activiti-5.22.0的libs中找到activiti-modeler-5.22.0-sources.jar，
 将其解压，将会找到以下三个类：ModelEditorJsonRestResource,ModelSaveRestResource,StencilsetRestResource。
-复制resource包下，改造成符合springboot的service
+复制resource包下，改造成符合springboot的controller
 3.修改ModelSaveRestResource
 ```java
-@Service
+@RestController
+@RequestMapping("/models")
 public class ModelSaveRestResource implements ModelDataJsonConstants {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ModelSaveRestResource.class);
     @Autowired
@@ -74,7 +75,13 @@ public class ModelSaveRestResource implements ModelDataJsonConstants {
     @Autowired
     private ObjectMapper objectMapper;
 
-    public void saveModel(String modelId, String name, String json_xml, String svg_xml, String description) {
+    @PutMapping("/model/{modelId}/save")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void saveModel(@PathVariable String modelId,
+                          @RequestParam("name") String name,
+                          @RequestParam("json_xml") String json_xml,
+                          @RequestParam("svg_xml") String svg_xml,
+                          @RequestParam("description") String description) {
         try {
             Model model = repositoryService.getModel(modelId);
             ObjectNode modelJson = (ObjectNode) objectMapper.readTree(model.getMetaInfo());
@@ -200,43 +207,16 @@ public class ActivitiConfig {
 ## 入口
 1. 源码
 ```java
+@ModelerSwagger
+@Api(tags = "流程审批")
 @RestController
 @RequestMapping("/models")
 public class ModelerController {
     @Autowired
-    private ModelEditorJsonRestResource modelEditorJsonRestResource;
-    @Autowired
-    private ModelSaveRestResource modelSaveRestResource;
-    @Autowired
-    private StencilsetRestResource stencilsetRestResource;
-    @Autowired
     private ModelerService modelerService;
 
-    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
-    @GetMapping("/model/{modelId}/json")
-    public ObjectNode getEditorJson(@PathVariable String modelId) {
-        return modelEditorJsonRestResource.getEditorJson(modelId);
-    }
-
-    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
-    @PutMapping("/model/{modelId}/save")
-    @ResponseStatus(value = HttpStatus.OK)
-    public void saveModel(@PathVariable String modelId,
-                          @RequestParam("name") String name,
-                          @RequestParam("json_xml") String json_xml,
-                          @RequestParam("svg_xml") String svg_xml,
-                          @RequestParam("description") String description) {
-        modelSaveRestResource.saveModel(modelId, name, json_xml, svg_xml, description);
-    }
-
-    @ApiOperation("Activiti官方提供的在线定义模型相关接口")
-    @GetMapping("/editor/stencilset")
-    public String getStencilset() {
-        return stencilsetRestResource.getStencilset();
-    }
-
     @ApiOperation("定义模型")
-    @PostMapping
+    @GetMapping
     public void modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
         modelerService.modeler(request, response);
     }
@@ -253,12 +233,6 @@ public class ModelerController {
         return modelerService.start(processName);
     }
 
-    @ApiOperation("待审批任务")
-    @GetMapping("/pending/approval")
-    public List<String> pendingApproval(@RequestParam String assignee) {
-        return modelerService.pendingApproval(assignee);
-    }
-
     @ApiOperation("审批")
     @PostMapping("/{processInstanceId}/approval")
     public void Approval(@PathVariable String processInstanceId) {
@@ -270,7 +244,6 @@ public class ModelerController {
     public List<Map<String, Object>> historyNode(@PathVariable String processInstanceId) {
         return modelerService.historyNode(processInstanceId);
     }
-
 }
 ```
 2. 业务实现
@@ -285,6 +258,7 @@ public class ModelerServiceImpl implements ModelerService {
     private TaskService taskService;
     @Autowired
     private HistoryService historyService;
+
 
     @Override
     public String modeler(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -345,16 +319,6 @@ public class ModelerServiceImpl implements ModelerService {
     public void approval(String processInstanceId) {
         String taskId = taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult().getId();
         taskService.complete(taskId);
-    }
-
-    @Override
-    public List<String> pendingApproval(String assignee) {
-        return taskService.createTaskQuery()
-                .taskAssignee(assignee)
-                .list()
-                .stream()
-                .map(TaskInfo::getId)
-                .collect(Collectors.toList());
     }
 
     @Override
