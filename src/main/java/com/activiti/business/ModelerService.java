@@ -30,12 +30,6 @@ public interface ModelerService {
     void approval(String processInstanceId);
 
     /**
-     * @param assignee 审批人
-     * @return 待审批任务(taskId)列表
-     */
-    List<String> pendingApproval(String assignee);
-
-    /**
      *
      * @param processInstanceId 流程实例id
      * @return 历史任务

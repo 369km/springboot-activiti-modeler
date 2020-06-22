@@ -102,16 +102,6 @@ public class ModelerServiceImpl implements ModelerService {
     }
 
     @Override
-    public List<String> pendingApproval(String assignee) {
-        return taskService.createTaskQuery()
-                .taskAssignee(assignee)
-                .list()
-                .stream()
-                .map(TaskInfo::getId)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public List<Map<String, Object>> historyNode(String processInstanceId) {
         return historyService.createHistoricTaskInstanceQuery()
                 .processInstanceId(processInstanceId)

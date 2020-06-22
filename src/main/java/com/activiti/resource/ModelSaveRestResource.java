@@ -12,13 +12,15 @@ import org.apache.batik.transcoder.image.PNGTranscoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
-@Service
+@RestController
+@RequestMapping("/models")
 public class ModelSaveRestResource implements ModelDataJsonConstants {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ModelSaveRestResource.class);
     @Autowired
@@ -26,7 +28,13 @@ public class ModelSaveRestResource implements ModelDataJsonConstants {
     @Autowired
     private ObjectMapper objectMapper;
 
-    public void saveModel(String modelId, String name, String json_xml, String svg_xml, String description) {
+    @PutMapping("/model/{modelId}/save")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void saveModel(@PathVariable String modelId,
+                          @RequestParam("name") String name,
+                          @RequestParam("json_xml") String json_xml,
+                          @RequestParam("svg_xml") String svg_xml,
+                          @RequestParam("description") String description) {
         try {
             Model model = repositoryService.getModel(modelId);
             ObjectNode modelJson = (ObjectNode) objectMapper.readTree(model.getMetaInfo());
